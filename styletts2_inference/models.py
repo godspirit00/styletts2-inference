@@ -703,6 +703,7 @@ class StyleTTS2(nn.Module):
 
             
             pred_dur = torch.round(duration.squeeze()).clamp(min=1)
+            pred_dur[-1] = pred_dur[-1].clamp(max=6)
 
                     
             if self.config.model_params.decoder.type == 'hifigan':
