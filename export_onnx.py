@@ -10,7 +10,7 @@ def export(args):
     if args.hf_path:
         model = StyleTTS2(args.hf_path, device='cpu')
     else:
-        model = StyleTTS2(config_path=args.config, weights_path=args.weights_path, device='cpu')
+        model = StyleTTS2(config_path=args.config, weights_path=args.model, device='cpu')
     tokens = model.tokenizer.encode(args.text)
     if model.config.model_params.multispeaker:
         style = model.predict_style_multi(args.audio_prompt, tokens)
