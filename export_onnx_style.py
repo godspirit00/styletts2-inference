@@ -169,7 +169,7 @@ if __name__ == '__main__':
                         help='Path to config YAML (must include plbert_params and vocab)')
     parser.add_argument('-w',  '--weights_path',  type=Path, default=None,
                         help='Path to .pth checkpoint')
-    parser.add_argument('-t',  '--text',          type=str,  required=True,
+    parser.add_argument('-t',  '--text',          type=str, default="ðæt sˈaʊndz lˈaɪk ɐ wˈʌndɚfəl tɹˈɪp.", required=False,
                         help='Phonemized dummy text used for tracing (e.g. "hɛloʊ")')
     args = parser.parse_args()
 

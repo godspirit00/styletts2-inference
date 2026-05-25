@@ -10,7 +10,7 @@ def export(args):
     if args.hf_path:
         model = StyleTTS2(args.hf_path, device='cpu')
     else:
-        model = StyleTTS2(config_path=args.config, weights_path=args.model, device='cpu')
+        model = StyleTTS2(config_path=args.config, weights_path=args.weights_path, device='cpu')
     tokens = model.tokenizer.encode(args.text)
     if model.config.model_params.multispeaker:
         style = model.predict_style_multi(args.audio_prompt, tokens)
@@ -70,12 +70,8 @@ if __name__ == "__main__":
     )
 
 
-    parser.add_argument(
-        "-m",
-        "--model",
-        type=Path,
-        help="The model path.",
-    )
+    parser.add_argument('-w',  '--weights_path',  type=Path, default=None,
+                        help='Path to .pth checkpoint')
     
     parser.add_argument(
         "-ap",
@@ -89,7 +85,7 @@ if __name__ == "__main__":
         "-t",
         "--text",
         type=str,
-        default=None,
+        default="ðæt sˈaʊndz lˈaɪk ɐ wˈʌndɚfəl tɹˈɪp.",
         help="The dummy phonemized text to generate",
     )
     args = parser.parse_args()
