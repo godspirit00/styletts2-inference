@@ -7,7 +7,6 @@ plbert_params:
     num_hidden_layers: 12
     dropout: 0.1
 
-
 model_params:
   multispeaker: false
   vocab: "$;:,.!?¡¿—…\"«»“” ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzɑɐɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮʟɱɯɰŋɳɲɴøɵɸθœɶʘɹɺɾɻʀʁɽʂʃʈʧʉʊʋⱱʌɣɤʍχʎʏʑʐʒʔʡʕʢǀǁǂǃˈˌːˑʼʴʰʱʲʷˠˤ˞↓↑→↗↘'̩'ᵻ"
@@ -22,7 +21,7 @@ model_params:
   max_dur: 50 # maximum duration of a single phoneme
   style_dim: 128 # style vector size
   
-  dropout: 0.0
+  dropout: 0.2
 
   # config for decoder
   decoder: 
@@ -35,7 +34,6 @@ model_params:
       gen_istft_n_fft: 20
       gen_istft_hop_size: 5
       
-  
   # style diffusion model config
   diffusion:
     embedding_mask_proba: 0.1
@@ -48,7 +46,7 @@ model_params:
 
     # diffusion distribution config
     dist:
-      sigma_data: 0.45731624995853165
-      mean: -4.0
-      std: 4.0
-  
+      sigma_data: 0.2 # placeholder for estimate_sigma_data set to false
+      estimate_sigma_data: true # estimate sigma_data from the current batch if set to true
+      mean: -3.0
+      std: 1.0
