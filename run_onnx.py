@@ -68,6 +68,7 @@ def sample_style(
     embedding_np: np.ndarray,
     noise_np: np.ndarray,
     num_steps: int = 10,
+    deterministic: bool = False,
 ) -> np.ndarray:
     """Run ADPM2 diffusion sampling and return the style vector.
 
@@ -76,6 +77,10 @@ def sample_style(
         embedding_np:     BERT embedding, shape [1, seq_len, hidden_size]
         noise_np:         Starting noise, shape [1, 1, style_dim*2]
         num_steps:        Number of diffusion steps (default 10)
+        deterministic:    If True, drop the ADPM2 stochastic term (sigma_up noise)
+                          so sampling is a deterministic ODE solve. This removes the
+                          run-to-run style variance that occasionally lands on a bad
+                          (drone/buzzy) style for fragile checkpoints.
 
     Returns:
         style vector, shape [1, 1, style_dim*2]
@@ -105,7 +110,7 @@ def sample_style(
         d_mid          = (x_mid - x_denoised_mid) / sigma_mid
 
         x = x + d_mid * (sigma_down - sigma)
-        if sigma_up > 0.0:
+        if sigma_up > 0.0 and not deterministic:
             x = x + np.random.randn(*x.shape).astype(np.float32) * sigma_up
 
     # DiffusionSampler has clamp=False, so no clamping
@@ -146,20 +151,29 @@ def run(args):
 
     # 2. Style prediction via diffusion sampling
     noise = np.random.randn(1, 1, style_dim * 2).astype(np.float32)
-    style = sample_style(denoiser_sess, bert_emb, noise, num_steps=args.diffusion_steps)
+    style = sample_style(denoiser_sess, bert_emb, noise, num_steps=args.diffusion_steps,
+                         deterministic=args.deterministic)
     # style: [1, 1, 256]  →  squeeze to [1, 256]
     s_prev = style.squeeze(1)   # [1, 256]
 
     # 3. TTS synthesis
     # The exported styletts.onnx takes 1-D tokens (model.forward prepends 0-token internally)
-    (wav_out,) = tts_sess.run(
-        ['output_wav'],
-        {
-            'tokens': tokens,                                        # [L]
-            'speed':  np.array(args.speed, dtype=np.float32),
-            's_prev': s_prev,                                        # [1, 256]
-        },
-    )  # [T]
+    tts_inputs = {
+        'tokens': tokens,                                        # [L]
+        'speed':  np.array(args.speed, dtype=np.float32),
+        's_prev': s_prev,                                        # [1, 256]
+    }
+    # Per-phoneme duration cap. <=0 disables it. Only sent if the exported model
+    # declares the input (models exported before this feature simply ignore it).
+    tts_input_names = {i.name for i in tts_sess.get_inputs()}
+    if 'dur_cap' in tts_input_names:
+        cap = float(args.dur_cap) if args.dur_cap and args.dur_cap > 0 else 1.0e9
+        tts_inputs['dur_cap'] = np.array(cap, dtype=np.float32)
+    elif args.dur_cap and args.dur_cap > 0:
+        print('WARNING: --dur_cap given but this styletts.onnx has no dur_cap input; '
+              're-export with the updated export_onnx.py to enable it.')
+
+    (wav_out,) = tts_sess.run(['output_wav'], tts_inputs)  # [T]
 
     # 4. Write WAV
     wav_out  = wav_out.astype(np.float32)
@@ -185,6 +199,13 @@ if __name__ == '__main__':
     parser.add_argument('--config_json',             type=str,   default='styletts_config.json')
     parser.add_argument('--speed',                   type=float, default=1.0)
     parser.add_argument('--diffusion_steps',         type=int,   default=10)
+    parser.add_argument('--deterministic',           action='store_true',
+                        help='Drop the ADPM2 stochastic term so style sampling is a '
+                             'deterministic ODE solve (removes run-to-run blow-ups).')
+    parser.add_argument('--dur_cap',                 type=float, default=0.0,
+                        help='Per-phoneme max predicted duration in frames (0 = off). '
+                             'Requires a model exported with the dur_cap input. '
+                             'Try 15-20 to prevent multi-second stretched garbage.')
     parser.add_argument('--seed',                    type=int,   default=None,
                         help='Fix numpy RNG seed for reproducible style generation')
     args = parser.parse_args()

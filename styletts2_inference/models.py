@@ -672,7 +672,10 @@ class StyleTTS2(nn.Module):
         s_pred[:, 128:] = beta * s_pred[:, 128:] + (1 - beta)  * voice_features[:, 128:]
         return s_pred
     
-    def forward(self, tokens, speed = 1.0, s_prev=torch.zeros(1,256)):
+    def forward(self, tokens, speed = 1.0, s_prev=torch.zeros(1,256), dur_cap=torch.tensor(1.0e9)):
+        # dur_cap: per-phoneme maximum predicted duration (in frames). Pass a large
+        # value (e.g. 1e9) to disable. Exposed as an ONNX input so a single exported
+        # model can be run capped or uncapped at runtime for A/B comparison.
         dtype = next(self.parameters()).dtype
         s_prev = s_prev.to(self.device)
         tokens = tokens.to(self.device)
@@ -703,6 +706,7 @@ class StyleTTS2(nn.Module):
 
             
             pred_dur = torch.round(duration.squeeze()).clamp(min=1)
+            pred_dur = torch.minimum(pred_dur, dur_cap.to(pred_dur.device, dtype=pred_dur.dtype))
             pred_dur[-1] = pred_dur[-1].clamp(max=6)
 
                     

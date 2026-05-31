@@ -19,9 +19,10 @@ def export(args):
     
     model_inputs = {"tokens": tokens,
                     "speed": torch.tensor(1.0, dtype=torch.float32),
-                    "s_prev": style
+                    "s_prev": style,
+                    "dur_cap": torch.tensor(1.0e9, dtype=torch.float32)
                     }
-    input_names = ['tokens', 'speed', 's_prev']
+    input_names = ['tokens', 'speed', 's_prev', 'dur_cap']
 
 
     torch.onnx.export(model, kwargs=model_inputs,
