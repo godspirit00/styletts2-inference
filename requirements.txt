@@ -7,5 +7,5 @@ scipy
 einops
 einops_exts
 transformers
-numpy<2
+numpy
 huggingface_hub
